@@ -56,9 +56,46 @@ def get_seq(lend, seq):
         return 0
 
 
-t = time()
-res = []
-for seq in product(range(-9,10), repeat=4):
-    res.append(sum([get_seq(lend, seq) for lend in range(len(data))]))
-print(max(res))
-print(time()-t)
+# t = time()
+# res = []
+# for seq in product(range(-9,10), repeat=4):
+#     res.append(sum([get_seq(lend, seq) for lend in range(len(data))]))
+# print(max(res))
+# print(time()-t)
+
+
+
+# ======================
+import numpy as np
+
+
+def solve_numpy(data):
+    secret_size = 2001
+    buyers = len(data)
+    mask = 2 ** 24 - 1
+    all_4seq = 19 ** 4
+
+    n = np.array(data, dtype=np.int32)
+    all_secrets = np.zeros((secret_size, buyers), dtype=np.int32)
+    all_secrets[0, :] = n
+    for i in range(1, secret_size):
+        n ^= (n << 6) & mask
+        n ^= (n >> 5)
+        n ^= (n << 11) & mask
+        all_secrets[i, :] = n
+    part1 = sum(n.astype(np.uint64))
+    value = all_secrets % 10
+    diff = value[:-1] - value[1:] + 9
+    encode = diff[:-3] + 19 * diff[1:-2] + 19 ** 2 * diff[2:-1] + 19 ** 3 * diff[3:]
+    encode += np.arange(buyers) * all_4seq
+
+    flat_value = value[4:].flatten()
+    unique_values, unique_indices = np.unique(encode, return_index=True)
+    col = np.zeros(all_4seq, dtype=np.uint16)
+    np.add.at(col, unique_values % all_4seq, flat_value[unique_indices])
+    return part1, max(col)
+
+
+data_s = open("input22.txt").read()
+data = list(map(int, data_s.strip().split()))
+print(solve_numpy(data))
